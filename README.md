@@ -1,41 +1,57 @@
-#!/bin/bash
+# 📦 Sistem Pengelolaan Inventaris Gudang
 
-echo "============================================"
-echo "       SISTEM PENGELOLAAN INVENTARIS        "
-echo "               KELOMPOK 4                   "
-echo "============================================"
-echo ""
-echo "TOPIK PROYEK:"
-echo "Sistem Pengelolaan Inventaris Gudang"
-echo ""
-echo "Deskripsi:"
-echo "Sistem ini dirancang untuk memantau stok barang"
-echo "di gudang dengan fitur-fitur utama sebagai berikut:"
-echo "1. Pemantauan stok barang dengan peringatan jika stok habis."
-echo "2. Trigger stok negatif untuk mencegah pengurangan stok di bawah nol."
-echo "3. Scraping data harga barang untuk perbandingan harga dengan e-commerce."
-echo ""
-echo "Anggota Kelompok 4:"
-echo "1. Felix Natanael Butarbutar (11323018)"
-echo "2. Irvan Agustriono Lumban Gaol (11323031)"
-echo "3. Febiola Alya Hutagalung (11323019)"
-echo "4. Rahel N. Pangaribuan (11323049)"
-echo ""
-echo "Tujuan Proyek:"
-echo "Mengintegrasikan konsep advanced database dengan PostgreSQL untuk membangun"
-echo "sistem basis data yang sesuai dengan studi kasus nyata."
-echo ""
-echo "Ruang Lingkup:"
-echo "1. Desain ERD."
-echo "2. Implementasi schema."
-echo "3. Pembuatan query kompleks."
-echo "4. Fitur advanced: view, stored procedure, trigger, transaksi."
-echo "5. Backup dan restore data."
-echo "6. Integrasi crawling data menggunakan Google Colab."
-echo ""
-echo "Durasi Proyek:"
-echo "Dikerjakan dalam waktu 3 minggu secara kolaboratif."
-echo ""
-echo "============================================"
-echo "SBD - Mini Project | 2024"
-echo "============================================"
+**Kelompok 4 - Proyek Sistem Basis Data (SBD)**  
+_Disini ga bisa ribut, harus tentram biar nilai A_
+
+---
+
+## 📌 Topik Proyek
+**Sistem Pengelolaan Inventaris Gudang**  
+Sistem ini dirancang untuk memantau stok barang di gudang dengan fitur-fitur berikut:
+- 📊 **Pemantauan stok barang**: Memberikan peringatan jika stok habis.
+- 🚨 **Trigger stok negatif**: Mencegah pengurangan stok barang di bawah nol.
+- 🔄 **Scraping data harga barang**: Mengambil data harga barang serupa dari e-commerce untuk perbandingan harga.
+
+---
+
+## 🎯 Tujuan
+Mengintegrasikan konsep **Advanced Database** menggunakan **PostgreSQL** dalam sistem informasi nyata. Proyek ini menjadi komponen utama penilaian UAS Praktikum SBD.
+
+---
+
+## 📋 Ruang Lingkup
+1. Desain **Entity Relationship Diagram (ERD)**.
+2. Implementasi schema database.
+3. Pembuatan query kompleks.
+4. Fitur lanjutan:
+   - View
+   - Stored Procedure
+   - Trigger
+   - Transaksi
+5. Backup dan restore data.
+6. **Crawling data** menggunakan Google Colab untuk scraping data harga barang.
+
+---
+
+## 🛠️ Teknologi
+- **Database**: PostgreSQL
+- **Crawling Tools**: Google Colab (Python)
+- **Tools Kolaborasi**: GitHub, Google Docs
+
+---
+
+## ⏳ Durasi Proyek
+Proyek dikerjakan secara kolaboratif selama **3 minggu** oleh 4 anggota tim.
+
+---
+
+## 👨‍💻 Anggota Kelompok
+- **Felix Natanael Butarbutar** (11323018)  
+- **Irvan Agustriono Lumban Gaol** (11323031)  
+- **Febiola Alya Hutagalung** (11323019)  
+- **Rahel N. Pangaribuan** (11323049)  
+
+---
+
+## 📅 Tahun
+**SBD - Mini Project | 2024**
