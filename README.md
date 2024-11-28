@@ -1,49 +1,41 @@
-# 🚀 Sistem Pengelolaan Inventaris Gudang
-
-Selamat datang di proyek **Sistem Pengelolaan Inventaris Gudang**!  
-Kelompok kami berkomitmen untuk menciptakan solusi yang efisien dan user-friendly dalam mengelola inventaris gudang.
-
-## 📋 Anggota Kelompok Kel-04
-- **11323018** Felix Natanael Butarbutar  
-- **11323031** Irvan Agustriono Lumban Gaol  
-- **11323019** Febiola Alya Hutagalung  
-- **11323049** Rahel N. Pangaribuan  
-
-## 📂 Fitur Proyek
-- **Manajemen Barang:** Tambah, ubah, hapus, dan cari data barang.  
-- **Pelacakan Stok:** Pemantauan stok barang secara real-time.  
-- **Laporan:** Penyajian laporan data inventaris dalam format yang mudah dipahami.  
-- **Multi-User Access:** Hak akses terpisah antara admin dan user.
-
-## 🔧 Teknologi yang Digunakan
-- **Backend:** Laravel / Node.js  
-- **Frontend:** Vue.js / React  
-- **Database:** MySQL / PostgreSQL  
-
-## 🚀 Cara Menjalankan Proyek
-```bash
 #!/bin/bash
 
-echo "======================================"
-echo "🚀 Sistem Pengelolaan Inventaris Gudang"
-echo "======================================"
-echo
-echo "1. Pastikan Anda memiliki Node.js dan MySQL/PostgreSQL terinstall."
-echo "2. Clone repository ini:"
-echo "   git clone https://github.com/kelompok04/inventaris-gudang.git"
-echo
-echo "3. Install dependencies backend dan frontend:"
-echo "   cd backend && npm install"
-echo "   cd ../frontend && npm install"
-echo
-echo "4. Setup database:"
-echo "   - Buat database bernama 'inventaris_gudang'."
-echo "   - Import file 'inventaris_gudang.sql' dari folder database."
-echo
-echo "5. Jalankan server backend dan frontend:"
-echo "   cd backend && npm start"
-echo "   cd ../frontend && npm run serve"
-echo
-echo "6. Akses aplikasi di browser pada URL: http://localhost:3000"
-echo
-echo "📚 Terima kasih telah menggunakan sistem kami!"
+echo "============================================"
+echo "       SISTEM PENGELOLAAN INVENTARIS        "
+echo "               KELOMPOK 4                   "
+echo "============================================"
+echo ""
+echo "TOPIK PROYEK:"
+echo "Sistem Pengelolaan Inventaris Gudang"
+echo ""
+echo "Deskripsi:"
+echo "Sistem ini dirancang untuk memantau stok barang"
+echo "di gudang dengan fitur-fitur utama sebagai berikut:"
+echo "1. Pemantauan stok barang dengan peringatan jika stok habis."
+echo "2. Trigger stok negatif untuk mencegah pengurangan stok di bawah nol."
+echo "3. Scraping data harga barang untuk perbandingan harga dengan e-commerce."
+echo ""
+echo "Anggota Kelompok 4:"
+echo "1. Felix Natanael Butarbutar (11323018)"
+echo "2. Irvan Agustriono Lumban Gaol (11323031)"
+echo "3. Febiola Alya Hutagalung (11323019)"
+echo "4. Rahel N. Pangaribuan (11323049)"
+echo ""
+echo "Tujuan Proyek:"
+echo "Mengintegrasikan konsep advanced database dengan PostgreSQL untuk membangun"
+echo "sistem basis data yang sesuai dengan studi kasus nyata."
+echo ""
+echo "Ruang Lingkup:"
+echo "1. Desain ERD."
+echo "2. Implementasi schema."
+echo "3. Pembuatan query kompleks."
+echo "4. Fitur advanced: view, stored procedure, trigger, transaksi."
+echo "5. Backup dan restore data."
+echo "6. Integrasi crawling data menggunakan Google Colab."
+echo ""
+echo "Durasi Proyek:"
+echo "Dikerjakan dalam waktu 3 minggu secara kolaboratif."
+echo ""
+echo "============================================"
+echo "SBD - Mini Project | 2024"
+echo "============================================"
