@@ -148,7 +148,7 @@ SELECT TambahStok(1, 50);
 
 SELECT * FROM Transaksi;
 
-
+--=== Fitur 3 : TRIGGER
 CREATE OR REPLACE FUNCTION cegah_stok_negatif()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -168,8 +168,73 @@ FOR EACH ROW
 EXECUTE FUNCTION cegah_stok_negatif();
 
 -- Uji kasus stok negatif
-UPDATE Produk
-SET stok = stok - 200
+BEGIN;
+UPDATE Produk SET stok = stok - 200
 WHERE idProduk = 1; -- Misalnya stok awal kurang dari 200
+COMMIT;
+
+select * from Transaksi;
 
 
+--== FItur 4 : Trigger mencatatat log otomatis saat ada  transaksi penjualan atau penambahan stok dari pemasok
+CREATE OR REPLACE FUNCTION catat_transaksi()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Mencatat log stok ke tabel Transaksi
+    INSERT INTO Transaksi (idProduk, idGudang, jumlah, tanggalTransaksi, jenisTransaksi)
+    VALUES (
+        NEW.idProduk, -- ID produk yang diubah
+        NEW.idGudang, -- ID gudang yang terkait
+        (NEW.stok - OLD.stok), -- Selisih stok (positif untuk pembelian, negatif untuk penjualan)
+        CURRENT_DATE, -- Tanggal transaksi saat ini
+        CASE
+            WHEN NEW.stok > OLD.stok THEN 'Pembelian'
+            WHEN NEW.stok < OLD.stok THEN 'Penjualan'
+            ELSE 'Penyesuaian Stok'
+        END -- Jenis transaksi berdasarkan perubahan stok
+    );
+
+    RETURN NEW; -- Melanjutkan operasi UPDATE
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER TriggerCekStok
+AFTER UPDATE OF stok ON Produk
+FOR EACH ROW
+WHEN (OLD.stok <> NEW.stok) -- Hanya mencatat jika stok berubah
+EXECUTE FUNCTION catat_transaksi();
+
+
+
+--== Fitur 5 : Menampilkan pesan bahwa operasi UPDATE pada tabel Produk berhasil atau tidak
+CREATE OR REPLACE FUNCTION beri_pesan_update_stok()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Cek apakah stok bertambah atau berkurang
+    IF NEW.stok > OLD.stok THEN
+        RAISE NOTICE 'Stok produk % bertambah sebanyak % (stok sekarang: %)', 
+                     NEW.namaProduk, (NEW.stok - OLD.stok), NEW.stok;
+    ELSIF NEW.stok < OLD.stok THEN
+        RAISE NOTICE 'Stok produk % berkurang sebanyak % (stok sekarang: %)', 
+                     NEW.namaProduk, (OLD.stok - NEW.stok), NEW.stok;
+    ELSE
+        RAISE NOTICE 'Tidak ada perubahan pada stok produk %', NEW.namaProduk;
+    END IF;
+
+    RETURN NEW; -- Melanjutkan proses UPDATE
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER TriggerPesanUpdateStok
+AFTER UPDATE OF stok ON Produk
+FOR EACH ROW
+WHEN (OLD.stok <> NEW.stok) -- Hanya memicu jika stok berubah
+EXECUTE FUNCTION beri_pesan_update_stok();
+
+
+SELECT * FROM Produk;
+SELECT * FROM Transaksi;
+
+UPDATE Produk
+SET stok = stok + 5
+WHERE idProduk = 4;
