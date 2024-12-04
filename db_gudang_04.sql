@@ -77,22 +77,99 @@ VALUES
 (4, 1, 8, '2024-12-04', 'Pembelian'),
 (5, 1, 12, '2024-12-05', 'Penjualan');
 
-
-SELECT * FROM transaksi;
-SELECT * FROM Produk;
-SELECT * FROM Pemasok;
-SELECT * FROM Gudang;
-
-
+--===Fitur 1: Pemantauan Stok Barang
+-- Membuat View untuk memantau stok barang dan memberikan peringatan jika stok habis:
 CREATE VIEW StokGudang AS
 SELECT 
     g.namaGudang, 
     p.namaProduk, 
-    p.stok, 
-    p.tanggalKadaluarsa
+    p.stok,
+    p.tanggalKadaluarsa,
+    CASE 
+        WHEN p.stok = 0 THEN 'Stok Habis'
+        WHEN p.stok < 10 THEN 'Stok Hampir Habis'
+        ELSE 'Stok Cukup'
+    END AS statusStok
 FROM Produk p
 JOIN Gudang g ON p.idGudang = g.idGudang;
 
+-- Melihat data stok
+SELECT * FROM StokGudang;
 
+CREATE VIEW PemantauanStok AS
+SELECT 
+    p.namaProduk, 
+    p.stok, 
+    p.tanggalKadaluarsa, 
+    pm.namaPemasok, 
+    g.namaGudang
+FROM Produk p
+JOIN Pemasok pm ON p.idPemasok = pm.idPemasok
+JOIN Gudang g ON p.idGudang = g.idGudang;
+
+SELECT * FROM PemantauanStok;
+
+
+--=== Fitur 2 : Stored Procedure
+-- Membuat prosedur untuk menambahkan stok produk:
+CREATE OR REPLACE FUNCTION TambahStok(
+    prodID INT, 
+    tambahanStok INT
+) RETURNS VOID AS $$
+DECLARE
+    rows_affected INT;
+BEGIN
+    -- Update stok produk dan simpan jumlah baris yang diperbarui
+    UPDATE Produk
+    SET stok = stok + tambahanStok
+    WHERE idProduk = prodID
+    RETURNING idProduk INTO rows_affected;
+
+    -- Periksa apakah ada baris yang diperbarui
+    IF NOT FOUND THEN
+        RAISE NOTICE 'No rows updated in Produk. Check prodID: %', prodID;
+    END IF;
+
+    -- Catat transaksi
+    INSERT INTO Transaksi (idProduk, idGudang, jumlah, tanggalTransaksi, jenisTransaksi)
+    VALUES (
+        prodID, 
+        (SELECT idGudang FROM Produk WHERE idProduk = prodID), 
+        tambahanStok, 
+        CURRENT_DATE, 
+        'Pembelian'
+    );
+END;
+$$ LANGUAGE plpgsql;
+
+
+SELECT * FROM Produk;
+SELECT TambahStok(1, 50);
+
+SELECT * FROM Transaksi;
+
+
+CREATE OR REPLACE FUNCTION cegah_stok_negatif()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Jika stok menjadi negatif, hentikan operasi dan beri pesan error
+    IF NEW.stok < 0 THEN
+        RAISE EXCEPTION 'Stok tidak boleh negatif.';
+    END IF;
+
+    -- Lanjutkan operasi jika stok valid
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER CegahStokNegatif
+BEFORE UPDATE ON Produk
+FOR EACH ROW
+EXECUTE FUNCTION cegah_stok_negatif();
+
+-- Uji kasus stok negatif
+UPDATE Produk
+SET stok = stok - 200
+WHERE idProduk = 1; -- Misalnya stok awal kurang dari 200
 
 
