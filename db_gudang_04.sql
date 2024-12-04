@@ -1,6 +1,6 @@
 --============ KELOMPOK 04 SISTEM BASIS DATA ============--
 --======== SISTEM PENGELOLAAN INVENTARIS GUDANG ========--
-
+test push rahel
 --=== 1. CREATE DATABASE ===--
 CREATE DATABASE db_gudang_04;
 
