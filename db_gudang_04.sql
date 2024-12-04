@@ -1,10 +1,10 @@
 --============ KELOMPOK 04 SISTEM BASIS DATA ============--
 --======== SISTEM PENGELOLAAN INVENTARIS GUDANG ========--
 
-CREATE DATABASE db_gudang_04
+--=== 1. CREATE DATABASE ===--
+CREATE DATABASE db_gudang_04;
 
---=== CREATE TABLE===--
-
+--=== 2. CREATE TABLE ===--
 CREATE TABLE Gudang (
     idGudang SERIAL PRIMARY KEY,
     namaGudang VARCHAR(100) NOT NULL,
@@ -46,9 +46,8 @@ CREATE TABLE Transaksi (
     CONSTRAINT fk_gudang_transaksi FOREIGN KEY (idGudang) REFERENCES Gudang(idGudang)
 );
 
-
---=== DUMMY DATA===--
-
+--=== 3. DUMMY DATA ===--
+-- a. Data Pemasok
 INSERT INTO Pemasok (namaPemasok, alamat, telepon, email)
 VALUES 
 ('Pemasok A', 'Jalan Mawar No. 1', '081234567890', 'pemasoka@gmail.com'),
@@ -57,10 +56,11 @@ VALUES
 ('Pemasok D', 'Jalan Kenanga No. 4', '081234567893', 'pemasokd@gmail.com'),
 ('Pemasok E', 'Jalan Dahlia No. 5', '081234567894', 'pemasoke@gmail.com');
 
+-- b. Data Gudang
 INSERT INTO Gudang (namaGudang, lokasi, kapasitas)
-VALUES 
-('Gudang Utama', 'Sitolu Ama', 10000);
+VALUES ('Gudang Utama', 'Sitolu Ama', 10000);
 
+-- c. Data Produk
 INSERT INTO Produk (idPemasok, idGudang, namaProduk, deskripsi, kategori, harga, stok, tanggalMasuk, tanggalKadaluarsa)
 VALUES 
 (1, 1, 'Cokelat', 'Cokelat batangan untuk membuat kue atau makanan ringan', 'Bahan Makanan', 15000.00, 100, '2024-12-01', '2025-12-01'),
@@ -69,6 +69,7 @@ VALUES
 (4, 1, 'Minyak Goreng', 'Minyak goreng kualitas tinggi untuk memasak', 'Bahan Makanan', 30000.00, 50, '2024-12-04', '2025-12-04'),
 (5, 1, 'Susu Bubuk', 'Susu bubuk full cream untuk masakan atau minuman', 'Bahan Makanan', 50000.00, 75, '2024-12-05', '2025-12-05');
 
+-- d. Data Transaksi
 INSERT INTO Transaksi (idProduk, idGudang, jumlah, tanggalTransaksi, jenisTransaksi)
 VALUES 
 (1, 1, 10, '2024-12-01', 'Penjualan'),
@@ -77,8 +78,8 @@ VALUES
 (4, 1, 8, '2024-12-04', 'Pembelian'),
 (5, 1, 12, '2024-12-05', 'Penjualan');
 
---===Fitur 1: Pemantauan Stok Barang
--- Membuat View untuk memantau stok barang dan memberikan peringatan jika stok habis:
+--=== 4. VIEW ===--
+-- a. Stok Gudang
 CREATE VIEW StokGudang AS
 SELECT 
     g.namaGudang, 
@@ -93,9 +94,7 @@ SELECT
 FROM Produk p
 JOIN Gudang g ON p.idGudang = g.idGudang;
 
--- Melihat data stok
-SELECT * FROM StokGudang;
-
+-- b. Pemantauan Stok
 CREATE VIEW PemantauanStok AS
 SELECT 
     p.namaProduk, 
@@ -107,30 +106,17 @@ FROM Produk p
 JOIN Pemasok pm ON p.idPemasok = pm.idPemasok
 JOIN Gudang g ON p.idGudang = g.idGudang;
 
-SELECT * FROM PemantauanStok;
-
-
---=== Fitur 2 : Stored Procedure
--- Membuat prosedur untuk menambahkan stok produk:
+--=== 5. STORED PROCEDURE ===--
+-- a. Tambah Stok
 CREATE OR REPLACE FUNCTION TambahStok(
     prodID INT, 
     tambahanStok INT
 ) RETURNS VOID AS $$
-DECLARE
-    rows_affected INT;
 BEGIN
-    -- Update stok produk dan simpan jumlah baris yang diperbarui
     UPDATE Produk
     SET stok = stok + tambahanStok
-    WHERE idProduk = prodID
-    RETURNING idProduk INTO rows_affected;
+    WHERE idProduk = prodID;
 
-    -- Periksa apakah ada baris yang diperbarui
-    IF NOT FOUND THEN
-        RAISE NOTICE 'No rows updated in Produk. Check prodID: %', prodID;
-    END IF;
-
-    -- Catat transaksi
     INSERT INTO Transaksi (idProduk, idGudang, jumlah, tanggalTransaksi, jenisTransaksi)
     VALUES (
         prodID, 
@@ -142,22 +128,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
-SELECT * FROM Produk;
-SELECT TambahStok(1, 50);
-
-SELECT * FROM Transaksi;
-
---=== Fitur 3 : TRIGGER
+--=== 6. TRIGGERS ===--
+-- a. Cegah Stok Negatif
 CREATE OR REPLACE FUNCTION cegah_stok_negatif()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Jika stok menjadi negatif, hentikan operasi dan beri pesan error
     IF NEW.stok < 0 THEN
         RAISE EXCEPTION 'Stok tidak boleh negatif.';
     END IF;
-
-    -- Lanjutkan operasi jika stok valid
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -167,50 +145,36 @@ BEFORE UPDATE ON Produk
 FOR EACH ROW
 EXECUTE FUNCTION cegah_stok_negatif();
 
--- Uji kasus stok negatif
-BEGIN;
-UPDATE Produk SET stok = stok - 200
-WHERE idProduk = 1; -- Misalnya stok awal kurang dari 200
-COMMIT;
-
-select * from Transaksi;
-
-
---== FItur 4 : Trigger mencatatat log otomatis saat ada  transaksi penjualan atau penambahan stok dari pemasok
+-- b. Catat Transaksi Otomatis
 CREATE OR REPLACE FUNCTION catat_transaksi()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Mencatat log stok ke tabel Transaksi
     INSERT INTO Transaksi (idProduk, idGudang, jumlah, tanggalTransaksi, jenisTransaksi)
     VALUES (
-        NEW.idProduk, -- ID produk yang diubah
-        NEW.idGudang, -- ID gudang yang terkait
-        (NEW.stok - OLD.stok), -- Selisih stok (positif untuk pembelian, negatif untuk penjualan)
-        CURRENT_DATE, -- Tanggal transaksi saat ini
+        NEW.idProduk, 
+        NEW.idGudang, 
+        (NEW.stok - OLD.stok), 
+        CURRENT_DATE, 
         CASE
             WHEN NEW.stok > OLD.stok THEN 'Pembelian'
             WHEN NEW.stok < OLD.stok THEN 'Penjualan'
             ELSE 'Penyesuaian Stok'
-        END -- Jenis transaksi berdasarkan perubahan stok
+        END
     );
-
-    RETURN NEW; -- Melanjutkan operasi UPDATE
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER TriggerCekStok
 AFTER UPDATE OF stok ON Produk
 FOR EACH ROW
-WHEN (OLD.stok <> NEW.stok) -- Hanya mencatat jika stok berubah
+WHEN (OLD.stok <> NEW.stok)
 EXECUTE FUNCTION catat_transaksi();
 
-
-
---== Fitur 5 : Menampilkan pesan bahwa operasi UPDATE pada tabel Produk berhasil atau tidak
+-- c. Pesan Update Stok
 CREATE OR REPLACE FUNCTION beri_pesan_update_stok()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Cek apakah stok bertambah atau berkurang
     IF NEW.stok > OLD.stok THEN
         RAISE NOTICE 'Stok produk % bertambah sebanyak % (stok sekarang: %)', 
                      NEW.namaProduk, (NEW.stok - OLD.stok), NEW.stok;
@@ -221,20 +185,26 @@ BEGIN
         RAISE NOTICE 'Tidak ada perubahan pada stok produk %', NEW.namaProduk;
     END IF;
 
-    RETURN NEW; -- Melanjutkan proses UPDATE
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER TriggerPesanUpdateStok
 AFTER UPDATE OF stok ON Produk
 FOR EACH ROW
-WHEN (OLD.stok <> NEW.stok) -- Hanya memicu jika stok berubah
+WHEN (OLD.stok <> NEW.stok)
 EXECUTE FUNCTION beri_pesan_update_stok();
 
+--=== 7. TRANSAKSI UNTUK MENGUJI TRIGGERS ===--
+-- a. Uji Cegah Stok Negatif
+BEGIN;
+UPDATE Produk SET stok = stok - 200 WHERE idProduk = 1;
+COMMIT;
 
-SELECT * FROM Produk;
-SELECT * FROM Transaksi;
+-- b. Tambah Stok dan Catat Transaksi
+BEGIN;
+UPDATE Produk SET stok = stok + 5 WHERE idProduk = 4;
+COMMIT;
 
-UPDATE Produk
-SET stok = stok + 5
-WHERE idProduk = 4;
+-- c. Lihat Pemantauan Stok
+SELECT * FROM PemantauanStok;
