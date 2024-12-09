@@ -160,7 +160,7 @@ BEGIN
     VALUES ('Keluar', CONCAT('-', p_jumlah), p_id_produk, p_id_toko, CURRENT_TIMESTAMP);
 END;
 $$;
-
+call kurangi_stok (1,20,1);
 GRANT EXECUTE ON PROCEDURE kurangi_stok TO toko_role;
 
 --=== 4. PENGATURAN ROLE DAN HAK AKSES ===--
