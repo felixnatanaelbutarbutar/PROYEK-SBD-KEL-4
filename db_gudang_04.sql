@@ -261,6 +261,7 @@ GRANT SELECT, UPDATE, INSERT ON Produk TO toko_role;
 --=== 3. FITUR PEMANTAU STOK DENGAN MENGGUNAKAN PROSEDUR ===--
 -- d. Pemantau Stok
 -- Prosedur untuk memantau stok
+
 CREATE OR REPLACE PROCEDURE pantau_stok()
 LANGUAGE plpgsql
 AS $$
@@ -286,6 +287,7 @@ $$;
 -- Test
 CALL pantau_stok();
 SELECT * FROM Produk;
+SELECT * FROM Transaksi;
 
 -- e.View untuk melihat log barang hampir habis
 CREATE OR REPLACE VIEW view_log_peringatan AS
