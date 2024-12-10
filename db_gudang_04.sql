@@ -78,7 +78,7 @@ VALUES
 
 INSERT INTO Produk (nama_produk, kategori, stok, harga, id_produk_ecommerce)
 VALUES
-    ('Laptop', 'Elektronik', 50, 15000000, NULL),
+    ('Mouse', 'Elektronik', 5, 1500000, NULL),
     ('Baju', 'Pakaian', 100, 200000, NULL),
     ('Makanan Ringan', 'Makanan', 200, 10000, NULL);
 
@@ -165,7 +165,7 @@ GRANT EXECUTE ON PROCEDURE tambah_stok TO pemasok_role; -- Berikan akses hanya k
 -- Test
 SET ROLE pemasok_role;
 
-CALL tambah_stok(1, 1, 1);
+CALL tambah_stok(1, 10, 1);
 
 RESET ROLE
 
@@ -174,7 +174,7 @@ GRANT USAGE, SELECT ON SEQUENCE produk_id_produk_seq TO pemasok_role;
 -- Memberikan hak akses untuk sequence transaksi_id_transaksi_seq
 GRANT USAGE, SELECT ON SEQUENCE transaksi_id_transaksi_seq TO pemasok_role;
 -- Memberikan hak akses untuk melihat tabel transaksi
-GRANT ALL ON TABLE Transaksi TO pemasok_role;
+GRANT  SELECT, UPDATE, INSERT ON TABLE Transaksi TO pemasok_role;
 -- Memberikan hak akses untuk melihat tabel Produk
 GRANT SELECT, UPDATE ON TABLE Produk TO pemasok_role;
 
@@ -232,11 +232,11 @@ GRANT EXECUTE ON PROCEDURE kurangi_stok TO toko_role; -- Berikan akses hanya ke 
 -- Test Prosedur
 -- Transaksi Mengurangi stok, bila produk <= 10 maka tidak bisa
 BEGIN;
-CALL kurangi_stok(1, 5, 1); -- bisa
+CALL kurangi_stok(2, 5, 2); -- bisa
 COMMIT;
 
 BEGIN;
-CALL kurangi_stok(4, 15, 1); -- tidak bisa
+CALL kurangi_stok(4, 2, 1); -- tidak bisa
 ROLLBACK;
 
 -- Periksa hasil
@@ -285,6 +285,7 @@ $$;
 
 -- Test
 CALL pantau_stok();
+SELECT * FROM Produk;
 
 -- e.View untuk melihat log barang hampir habis
 CREATE OR REPLACE VIEW view_log_peringatan AS
@@ -335,7 +336,38 @@ BEGIN
     IF NEW.stok < 0 THEN
         -- Catat ke tabel Transaksi bahwa perubahan stok dibatalkan
         INSERT INTO Transaksi (tipe, perubahan, id_produk, tanggal)
+        VALUES ('Ditolak', 'Pengurangan stok dibatalkan: Stok negatif', OLD.id_produk, CURRENT_TIMESTAMP);
 
+        -- Batalkan perubahan dan munculkan exception
+        RAISE EXCEPTION 'Pengurangan stok tidak dapat dilakukan karena stok akan menjadi negatif.';
+    END IF;
+
+    -- Jika stok valid, lanjutkan proses
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_cek_stok_negatif
+BEFORE UPDATE ON Produk
+FOR EACH ROW
+WHEN (OLD.stok <> NEW.stok)
+EXECUTE FUNCTION cek_stok_negatif();
+
+UPDATE Produk
+SET stok = stok - 5
+WHERE id_produk = 4;
+
+SELECT * FROM Transaksi;
+
+SELECT * FROM Produk;
+
+--=== 5. VIEW UNTUK MEMPERMUDAH TIAP ROLE MELIHAT DATA YANG INGIN DIANALISIS ===--
+-- A. Laporan Transaksi Lengkap
+CREATE OR REPLACE VIEW LaporanTransaksi AS
+SELECT
+    t.id_transaksi,
+    t.tanggal,
+    t.tipe,
     t.perubahan,
     p.nama_produk,
     adm.nama AS nama_admin,
@@ -365,8 +397,8 @@ WHERE t.tipe = 'Masuk';
 
 SELECT * FROM view_produk_pemasok;
 
--- C. Pendapatan Per Toko
-CREATE OR REPLACE VIEW view_pendapatan_toko AS
+-- C. Pendapatan Gudang
+CREATE OR REPLACE VIEW view_pendapatan_gudang AS
 SELECT 
     t.id_toko,
     tk.username AS nama_toko,
@@ -378,7 +410,7 @@ JOIN Produk p ON t.id_produk = p.id_produk
 WHERE t.tipe = 'Keluar'
 GROUP BY t.id_toko, tk.username;
 
-SELECT * FROM view_pendapatan_toko;
+SELECT * FROM view_pendapatan_gudang;
 
 --=== 6. FITUR UNTUK MELAKUKAN PENCARIAN DATA ===--
 -- a. Prosedur untuk melakukan pencarian data
@@ -393,7 +425,7 @@ DECLARE
 BEGIN
     -- Pencarian produk berdasarkan nama, kategori, atau harga
     FOR produk IN (
-        SELECT id_produk, nama_produk, kategori, harga
+        SELECT id_produk, nama_produk, kategori, harga, stok
         FROM Produk
         WHERE nama_produk LIKE '%' || p_keyword || '%'
            OR kategori LIKE '%' || p_keyword || '%'
@@ -401,7 +433,7 @@ BEGIN
     )
     LOOP
         -- Menampilkan hasil pencarian produk
-        RAISE NOTICE 'ID: % | Nama: % | Kategori: % | Harga: Rp %', produk.id_produk, produk.nama_produk, produk.kategori, produk.harga;
+        RAISE NOTICE 'ID: % | Nama: % | Kategori: % | Harga: Rp % | Stok: % ', produk.id_produk, produk.nama_produk, produk.kategori, produk.harga, produk.stok;
         produk_ditemukan := TRUE; -- Tandai bahwa produk ditemukan
     END LOOP;
 
@@ -419,7 +451,7 @@ GRANT EXECUTE ON PROCEDURE SEARCH_PRODUK TO admin_role, pemasok_role, toko_role;
 SET ROLE admin_role;
 
 -- Pencarian produk dengan kata kunci "Laptop"
-CALL SEARCH_PRODUK('Kulkas');
+CALL SEARCH_PRODUK('Laptop');
 
 -- Pencarian produk dengan kategori "Elektronik"
 CALL SEARCH_PRODUK('Elektronik');
@@ -427,8 +459,7 @@ CALL SEARCH_PRODUK('Elektronik');
 -- Pencarian produk berdasarkan harga "15000000"
 CALL SEARCH_PRODUK('15000000');
 
+SELECT * FROM Transaksi;
+
 RESET ROLE;
 
-DELETE FROM ProdukEcommerce WHERE id_produk_ecommerce BETWEEN 36 AND 110;
-
-SELECT * FROM ProdukEcommerce;
