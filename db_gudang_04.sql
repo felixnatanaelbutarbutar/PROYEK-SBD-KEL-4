@@ -335,38 +335,7 @@ BEGIN
     IF NEW.stok < 0 THEN
         -- Catat ke tabel Transaksi bahwa perubahan stok dibatalkan
         INSERT INTO Transaksi (tipe, perubahan, id_produk, tanggal)
-        VALUES ('Ditolak', 'Pengurangan stok dibatalkan: Stok negatif', OLD.id_produk, CURRENT_TIMESTAMP);
 
-        -- Batalkan perubahan dan munculkan exception
-        RAISE EXCEPTION 'Pengurangan stok tidak dapat dilakukan karena stok akan menjadi negatif.';
-    END IF;
-
-    -- Jika stok valid, lanjutkan proses
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_cek_stok_negatif
-BEFORE UPDATE ON Produk
-FOR EACH ROW
-WHEN (OLD.stok <> NEW.stok)
-EXECUTE FUNCTION cek_stok_negatif();
-
-UPDATE Produk
-SET stok = stok - 5
-WHERE id_produk = 4;
-
-SELECT * FROM Transaksi;
-
-SELECT * FROM Produk;
-
---=== 5. VIEW UNTUK MEMPERMUDAH TIAP ROLE MELIHAT DATA YANG INGIN DIANALISIS ===--
--- A. Laporan Transaksi Lengkap
-CREATE OR REPLACE VIEW LaporanTransaksi AS
-SELECT
-    t.id_transaksi,
-    t.tanggal,
-    t.tipe,
     t.perubahan,
     p.nama_produk,
     adm.nama AS nama_admin,
