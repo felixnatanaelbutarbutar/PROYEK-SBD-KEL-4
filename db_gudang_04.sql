@@ -243,7 +243,7 @@ ROLLBACK;
 SELECT * FROM Transaksi;
 SELECT * FROM Produk;
 
--- Test
+-- Test Role toko_role
 SET ROLE toko_role;
 
 RESET ROLE
