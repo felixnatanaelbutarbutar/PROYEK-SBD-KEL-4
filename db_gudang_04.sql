@@ -371,6 +371,60 @@ SELECT * FROM Transaksi;
 SELECT * FROM Produk;
 
 --=== 5. VIEW UNTUK MENYEDERHANAKAN ANALISIS ===--
+<<<<<<< HEAD
+=======
+
+-- A. Laporan Transaksi Lengkap
+CREATE OR REPLACE VIEW LaporanTransaksi AS
+SELECT
+    t.id_transaksi,
+    t.tanggal,
+    t.tipe,
+    t.perubahan,
+    p.nama_produk,
+    adm.nama AS nama_admin,
+    pm.username AS nama_pemasok,
+    tk.username AS nama_toko
+FROM Transaksi t
+LEFT JOIN Produk p ON t.id_produk = p.id_produk
+LEFT JOIN Admin adm ON t.id_admin = adm.id_admin
+LEFT JOIN Pemasok pm ON t.id_pemasok = pm.id_pemasok
+LEFT JOIN Toko tk ON t.id_toko = tk.id_toko;
+
+SELECT * FROM LaporanTransaksi;
+
+-- B. Produk oleh Pemasok
+CREATE OR REPLACE VIEW view_produk_pemasok AS
+SELECT 
+    p.id_produk,
+    p.nama_produk,
+    p.kategori,
+    p.stok,
+    p.harga,
+    t.id_pemasok
+FROM 
+    Produk p
+JOIN Transaksi t ON p.id_produk = t.id_produk
+WHERE t.tipe = 'Masuk';
+
+SELECT * FROM view_produk_pemasok;
+
+-- C. Pendapatan Per Toko
+CREATE OR REPLACE VIEW view_pendapatan_toko AS
+SELECT 
+    t.id_toko,
+    tk.username AS nama_toko,
+    SUM(p.harga * CAST(SPLIT_PART(t.perubahan, '-', 2) AS INT)) AS total_pendapatan
+FROM 
+    Transaksi t
+JOIN Toko tk ON t.id_toko = tk.id_toko
+JOIN Produk p ON t.id_produk = p.id_produk
+WHERE t.tipe = 'Keluar'
+GROUP BY t.id_toko, tk.username;
+
+SELECT * FROM view_pendapatan_toko;
+
+>>>>>>> dee2c558f592e5cbb59788a67a19abb934b29f07
 
 -- A. Laporan Transaksi Lengkap
 CREATE OR REPLACE VIEW LaporanTransaksi AS
