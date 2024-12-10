@@ -24,7 +24,6 @@ CREATE TABLE Toko (
     kontak VARCHAR(100)
 );
 
-
 -- Tabel ProdukEcommerce
 CREATE TABLE ProdukEcommerce (
     id_produk_ecommerce SERIAL PRIMARY KEY,
@@ -65,12 +64,10 @@ INSERT INTO Admin (nama, username, password)
 VALUES
     ('Admin Satu', 'admin1', 'password123');
 
-
 -- Insert Pemasok
 INSERT INTO Pemasok (username, kontak)
 VALUES
     ('pemasok1', '081234567890');
-
 
 -- Insert Toko
 INSERT INTO Toko (username, kontak)
@@ -84,7 +81,6 @@ VALUES
     ('Laptop', 'Elektronik', 50, 15000000, NULL),
     ('Baju', 'Pakaian', 100, 200000, NULL),
     ('Makanan Ringan', 'Makanan', 200, 10000, NULL);
-
 
 --=== 2. FITUR CATAT TRANSAKSI OTOMATIS BERDASARKAN ROLE() ===--
 -- A. Fungsi untuk Menambah Produk ke Tabel Produk
@@ -119,7 +115,7 @@ GRANT EXECUTE ON PROCEDURE tambah_produk TO admin_role; -- Berikan akses hanya k
 -- Test
 SET ROLE admin_role
 
-CALL tambah_produk('Laptop', 'Elektronik', 15000000, 10, 1); 
+CALL tambah_produk('Kacamata', 'Lainnya', 15000000, 10, 1); 
 
 CALL tambah_produk('Kulkas', 'Elektronik', 5000000, 10, 1);
 
@@ -234,13 +230,6 @@ $$;
 GRANT EXECUTE ON PROCEDURE kurangi_stok TO toko_role; -- Berikan akses hanya ke role toko
 
 -- Test Prosedur
-SET ROLE toko_role;
-
--- Misalnya: Coba kurangi stok
-CALL kurangi_stok(3, 5, 1);
-
-RESET ROLE;
-
 -- Transaksi Mengurangi stok, bila produk <= 10 maka tidak bisa
 BEGIN;
 CALL kurangi_stok(1, 5, 1); -- bisa
@@ -264,10 +253,12 @@ GRANT USAGE, SELECT ON SEQUENCE produk_id_produk_seq TO toko_role;
 -- Memberikan hak akses untuk sequence transaksi_id_transaksi_seq
 GRANT USAGE, SELECT ON SEQUENCE transaksi_id_transaksi_seq TO toko_role;
 -- Memberikan hak akses untuk melihat tabel transaksi
-GRANT SELECT, UPDATE ON TABLE Transaksi TO toko_role;
+GRANT SELECT, UPDATE, INSERT ON Transaksi TO toko_role;
 -- Memberikan hak akses untuk melihat tabel Produk
-GRANT SELECT, UPDATE ON TABLE Produk TO toko_role;
+GRANT SELECT, UPDATE, INSERT ON Produk TO toko_role;
 
+
+--=== 3. FITUR PEMANTAU STOK DENGAN MENGGUNAKAN PROSEDUR ===--
 -- d. Pemantau Stok
 -- Prosedur untuk memantau stok
 CREATE OR REPLACE PROCEDURE pantau_stok()
@@ -312,9 +303,8 @@ WHERE p.stok <= 10;
 
 SELECT * FROM view_log_peringatan;
 
-
--- e. trigger untuk cegah stok negatif
--- Trigger untuk mencegah stok negatif
+--=== 4. FITUR UNTUK MENCEGAH STOK BERNILAI NEGATIF DENGAN MENGGUNAKAN TRIGGER ===--
+-- f. trigger untuk cegah stok negatif
 CREATE OR REPLACE FUNCTION cek_stok_negatif()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -370,10 +360,7 @@ SELECT * FROM Transaksi;
 
 SELECT * FROM Produk;
 
---=== 5. VIEW UNTUK MENYEDERHANAKAN ANALISIS ===--
-<<<<<<< HEAD
-=======
-
+--=== 5. VIEW UNTUK MEMPERMUDAH TIAP ROLE MELIHAT DATA YANG INGIN DIANALISIS ===--
 -- A. Laporan Transaksi Lengkap
 CREATE OR REPLACE VIEW LaporanTransaksi AS
 SELECT
@@ -424,54 +411,56 @@ GROUP BY t.id_toko, tk.username;
 
 SELECT * FROM view_pendapatan_toko;
 
->>>>>>> dee2c558f592e5cbb59788a67a19abb934b29f07
+--=== 6. FITUR UNTUK MELAKUKAN PENCARIAN DATA ===--
+-- a. Prosedur untuk melakukan pencarian data
+CREATE OR REPLACE PROCEDURE SEARCH_PRODUK(
+    p_keyword VARCHAR(100)
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    produk RECORD; -- Variabel untuk menyimpan hasil query
+    produk_ditemukan BOOLEAN := FALSE; -- Variabel untuk melacak apakah produk ditemukan
+BEGIN
+    -- Pencarian produk berdasarkan nama, kategori, atau harga
+    FOR produk IN (
+        SELECT id_produk, nama_produk, kategori, harga
+        FROM Produk
+        WHERE nama_produk LIKE '%' || p_keyword || '%'
+           OR kategori LIKE '%' || p_keyword || '%'
+           OR (p_keyword ~ '^[0-9]+(\.[0-9]+)?$' AND harga = CAST(p_keyword AS DOUBLE PRECISION)) -- Cek jika p_keyword adalah angka
+    )
+    LOOP
+        -- Menampilkan hasil pencarian produk
+        RAISE NOTICE 'ID: % | Nama: % | Kategori: % | Harga: Rp %', produk.id_produk, produk.nama_produk, produk.kategori, produk.harga;
+        produk_ditemukan := TRUE; -- Tandai bahwa produk ditemukan
+    END LOOP;
 
--- A. Laporan Transaksi Lengkap
-CREATE OR REPLACE VIEW LaporanTransaksi AS
-SELECT
-    t.id_transaksi,
-    t.tanggal,
-    t.tipe,
-    t.perubahan,
-    p.nama_produk,
-    adm.nama AS nama_admin,
-    pm.username AS nama_pemasok,
-    tk.username AS nama_toko
-FROM Transaksi t
-LEFT JOIN Produk p ON t.id_produk = p.id_produk
-LEFT JOIN Admin adm ON t.id_admin = adm.id_admin
-LEFT JOIN Pemasok pm ON t.id_pemasok = pm.id_pemasok
-LEFT JOIN Toko tk ON t.id_toko = tk.id_toko;
+    -- Jika tidak ada produk ditemukan, tampilkan peringatan
+    IF NOT produk_ditemukan THEN
+        RAISE NOTICE 'Peringatan: Tidak ada produk ditemukan untuk kata kunci: %', p_keyword;
+    END IF;
+END;
+$$;
 
-SELECT * FROM LaporanTransaksi;
+-- Hak Akses
+GRANT EXECUTE ON PROCEDURE SEARCH_PRODUK TO admin_role, pemasok_role, toko_role; -- Sesuaikan role yang diinginkan, seperti admin_role, pemasok_role, atau toko_role
 
--- B. Produk oleh Pemasok
-CREATE OR REPLACE VIEW view_produk_pemasok AS
-SELECT 
-    p.id_produk,
-    p.nama_produk,
-    p.kategori,
-    p.stok,
-    p.harga,
-    t.id_pemasok
-FROM 
-    Produk p
-JOIN Transaksi t ON p.id_produk = t.id_produk
-WHERE t.tipe = 'Masuk';
+-- Test
+SET ROLE admin_role;
 
-SELECT * FROM view_produk_pemasok;
+-- Pencarian produk dengan kata kunci "Laptop"
+CALL SEARCH_PRODUK('Kulkas');
 
--- C. Pendapatan Per Toko
-CREATE OR REPLACE VIEW view_pendapatan_toko AS
-SELECT 
-    t.id_toko,
-    tk.username AS nama_toko,
-    SUM(p.harga * CAST(SPLIT_PART(t.perubahan, '-', 2) AS INT)) AS total_pendapatan
-FROM 
-    Transaksi t
-JOIN Toko tk ON t.id_toko = tk.id_toko
-JOIN Produk p ON t.id_produk = p.id_produk
-WHERE t.tipe = 'Keluar'
-GROUP BY t.id_toko, tk.username;
+-- Pencarian produk dengan kategori "Elektronik"
+CALL SEARCH_PRODUK('Elektronik');
 
-SELECT * FROM view_pendapatan_toko;
+-- Pencarian produk berdasarkan harga "15000000"
+CALL SEARCH_PRODUK('15000000');
+
+RESET ROLE;
+
+
+delete from ProdukEcommerce where id_produk_ecommerce between 36 and 110;
+
+SELECT * FROM ProdukEcommerce;
