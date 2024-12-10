@@ -460,7 +460,6 @@ CALL SEARCH_PRODUK('15000000');
 
 RESET ROLE;
 
-
-delete from ProdukEcommerce where id_produk_ecommerce between 36 and 110;
+DELETE FROM ProdukEcommerce WHERE id_produk_ecommerce BETWEEN 36 AND 110;
 
 SELECT * FROM ProdukEcommerce;
